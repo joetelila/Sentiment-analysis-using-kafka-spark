@@ -20,7 +20,8 @@ conf.set("spark.jars.packages", "org.apache.spark:spark-sql-kafka-0-10_2.12:3.2.
                  
 #spark_master = "spark://131.114.50.200:7077"
 #spark_master = "spark://joetelila.local:7077"
-spark_master = "spark://joetelila.lan:7077"
+#spark_master = "spark://joetelila.lan:7077"
+spark_master = "spark://cpe-172-100-10-56.twcny.res.rr.com:7077"
 #sc = pyspark.SparkContext(master=spark_master,appName="Hello Spark")
 spark = SparkSession\
         .builder\
@@ -72,15 +73,12 @@ twt_pred = pred_tweet.groupBy('prediction').count()
 
 
 def prepare_request_data(data_dict):
-
         global sentiment_counts, sentiments
-
         for key, value in data_dict.items():
                 sentiment_counts[sentiments[int(key)]] = int(value)
         totalTweets = sum(sentiment_counts.values())
         request_data = {'totalTweet': str(totalTweets), 'posetiveTweet': str(sentiment_counts["Positive"]), 'negativeTweet': str(sentiment_counts["Negative"]), 'neutralTweet': str(sentiment_counts["Neutral"])}
         return request_data 
-        
 
 def foreach_batch_function(df, epoch_id):
         print("[INFO] : Batch {}".format(epoch_id))
