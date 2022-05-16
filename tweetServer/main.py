@@ -1,13 +1,16 @@
 from nis import cat
+import profile
 from flask import Flask, render_template, jsonify, request
 import numpy as np
 import ast
+import json
 application = Flask(__name__)
 
 totalTweets = 0
 posetiveTweets = 0
 negativeTweets = 0
 neutralTweets = 0
+negative_tweets = []
 
 @application.route('/')
 def homepage():
@@ -43,6 +46,26 @@ def update_data():
     posetiveTweets = ast.literal_eval(request.form['posetiveTweet'])
     negativeTweets = ast.literal_eval(request.form['negativeTweet'])
     totalTweets = ast.literal_eval(request.form['totalTweet'])
+    return "success",201
+
+@application.route('/get_negative_tweet', methods=['POST'])
+def get_negative_tweets():
+    global negative_tweets
+    if(len(negative_tweets) > 0):
+        neg_tweet = negative_tweets.pop(0)
+        created_at = neg_tweet['created_at']
+        text = neg_tweet['text']
+        username = neg_tweet['username']
+        profile_image_url = neg_tweet['profile_image_url']
+        return jsonify('',render_template('tweet_box.html',created_at=created_at,text=text,username=username,profile_image_url=profile_image_url))
+    # render the template here . . .
+    return "success",201
+
+@application.route('/add_negative_tweet', methods=['POST'])
+def add_negative_tweets():
+    global negative_tweets
+    content = request.json
+    negative_tweets.append(content)
     return "success",201
 
 if __name__ == "__main__":

@@ -18,7 +18,7 @@ def json_serializer(data):
 topic = "Elon_Musk_tweets"
 # Searching for tweets about 'Elon Musk' which are not retweets and are in English
 query = "Elon Musk -is:retweet lang:en"    #131.114.50.200 or localhost
-producer = KafkaProducer(bootstrap_servers='131.114.50.200:9092',value_serializer=json_serializer)
+#producer = KafkaProducer(bootstrap_servers='131.114.50.200:9092',value_serializer=json_serializer)
 
 # Create a streamer
 def get_twitter_data():
@@ -27,13 +27,15 @@ def get_twitter_data():
     for tweet in response.data:
        if users[tweet.author_id]:
            user = users[tweet.author_id]
-           result = {'created_at': tweet.created_at, 'text': tweet.text, 'tweet_id': tweet.id, 'username': user.username, 'profile_image_url': user.profile_image_url}
+           print(user.profile_image_url)
+           
+           #result = {'created_at': tweet.created_at, 'text': tweet.text, 'tweet_id': tweet.id, 'username': user.username, 'profile_image_url': user.profile_image_url}
           # producer.send() - method uses fire-and-forget mode
           # .get() - method uses synchronous mode
-           producer.send(topic, result)
+           #producer.send(topic, result)
     print('10 tweets published to Kafka topic {}'.format(topic))
     print("-------------------------------------------\n")
-
+       
 # Start the stream
 while True:
     get_twitter_data()

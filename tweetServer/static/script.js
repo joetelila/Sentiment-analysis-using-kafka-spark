@@ -36,3 +36,19 @@ $( document ).ready(function() {
   // set inner text if id to current date.
   document.getElementById("currentDate").innerText = monthNames[d.getMonth()] + ", " + d.getDate();
 });
+
+
+// requesting negative tweet every second.
+setInterval(function(){ 
+  //code goes here that will be run every 1 seconds.
+ // console.log("inside requesting negative tweets");
+  $.ajax({
+    url: "/get_negative_tweet",
+    type: "POST",
+    dataType: "json",
+    success: function(data){
+    console.log("inside requesting negative tweets");
+    $("#mean_tweets").append(data)
+    }
+  })
+}, 2000);
