@@ -1,9 +1,8 @@
-from nis import cat
-import profile
 from flask import Flask, render_template, jsonify, request
 import numpy as np
+from datetime import datetime
 import ast
-import json
+
 application = Flask(__name__)
 
 totalTweets = 0
@@ -54,10 +53,12 @@ def get_negative_tweets():
     if(len(negative_tweets) > 0):
         neg_tweet = negative_tweets.pop(0)
         created_at = neg_tweet['created_at']
+        created_at = datetime.fromisoformat(created_at)
+        created_at_ft = created_at.strftime("%B") +" "+ created_at.strftime("%d") +", "+ created_at.strftime("%H:%M")
         text = neg_tweet['text']
         username = neg_tweet['username']
         profile_image_url = neg_tweet['profile_image_url']
-        return jsonify('',render_template('tweet_box.html',created_at=created_at,text=text,username=username,profile_image_url=profile_image_url))
+        return jsonify('',render_template('tweet_box.html',created_at=created_at_ft,text=text,username=username,profile_image_url=profile_image_url))
     # render the template here . . .
     return "success",201
 
