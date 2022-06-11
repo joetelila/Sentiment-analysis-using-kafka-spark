@@ -12,10 +12,13 @@ from script_utils import *
 
 conf = SparkConf()
 conf.set("spark.jars.packages", "org.apache.spark:spark-sql-kafka-0-10_2.12:3.2.1")
+conf.set("spark.jars.packages", "com.johnsnowlabs.nlp:spark-nlp_2.12:3.4.4")
+#3 executor per instance of each worker 
+conf.set("spark.executor.memory", "6g")
 # johnsnowlab nlp package
-#conf.set("spark.jars.packages", "com.johnsnowlabs.nlp:spark-nlp_2.12:3.4.4")
 #spark_master = "spark://131.114.50.200:7077"
-spark_master = "spark://joetelila.local:7077"
+#spark_master = "spark://joetelila.local:7077"
+spark_master = "spark://131.114.50.200:7079"
 #spark_master = "spark://joetelila.lan:7077"
 #spark_master = "spark://cpe-172-100-10-56.twcny.res.rr.com:7077"
 #sc = pyspark.SparkContext(master=spark_master,appName="Hello Spark")
@@ -26,23 +29,26 @@ spark = SparkSession\
         .config(conf=conf)\
         .getOrCreate()
 
+# show only errors.
+spark._sc.setLogLevel("WARN")
+
 # Loading model
 print("[INFO] : Loading model...")
-pipeline_model = PipelineModel.load('pipeline_lr_model')
+pipeline_model = PipelineModel.load('/home/y.telila/DEP/Sentiment-analysis-using-kafka-spark/pipeline_lr_js_model')
 print("[INFO] : Model loaded successfully")
-print("[INFO] : This model has accuracy of - 60%, HODL on better model is training . . .")
+print("[INFO] : This model has accuracy of - 82%")
 
 # set of kafka bootstrap servers, comma separated.
 kafka_server = "131.114.50.200:9092"
 #kafka_server = "localhost:9092"
 # Subscribe to 1 topic
 # Note : read how to config offsetsync !!!!!
+#.option("startingOffsets", "latest") \
 df = spark \
   .readStream \
   .format("kafka") \
   .option("kafka.bootstrap.servers", kafka_server) \
-  .option("subscribe", "Elon_Musk_tweets") \
-  .option("startingOffsets", "latest") \
+  .option("subscribe", "ElonMusk") \
   .load()
 df.printSchema()
 '''
@@ -91,23 +97,28 @@ tweet_df = tweet_df.withColumn('text', F.regexp_replace('text','@[A-Za-z0-9_]+',
 tweet_df = tweet_df.withColumn('text', F.regexp_replace('text','https?://[^ ]+',''))
 tweet_df = tweet_df.withColumn('text', F.regexp_replace('text','www.[^ ]+',''))
 
+
 #tweet_df = pipelineFit.transform(tweet_df)
 pred_tweet= pipeline_model.transform(tweet_df)
-negative_tweets = pred_tweet.filter(pred_tweet.prediction == 0)
+negative_tweets = pred_tweet.filter(pred_tweet.prediction == 2)
 # Group (the count) tweets by prediction.
 twt_pred = pred_tweet.groupBy('prediction').count()
 twt_pred.printSchema()        
 # write the output to console
+# Every trigger(time), the sream will collect data from kafka and perform all 
+# query and outputs to the sink(which is for_each_batch_function)
+#  .trigger(processingTime="2 seconds") \
 twt_pred = twt_pred.writeStream \
         .outputMode("update") \
-        .trigger(processingTime="2 seconds") \
         .foreachBatch(foreach_batch_function) \
         .option("truncate", "false") \
         .start()
+
+# Every trigger(time), the sream will collect data from kafka and perform all 
+# query and outputs to the sink(which is for_each_batch_function)
+#  .trigger(processingTime="2 seconds") \
 negative_tweets = negative_tweets.writeStream \
         .outputMode("append") \
-        .trigger(processingTime="2 seconds") \
-        .option("truncate", "true") \
         .foreachBatch(foreach_batch_neg_function) \
         .start()
 twt_pred.awaitTermination()

@@ -1,10 +1,19 @@
+'''
+Title : Tweet sentiment Analysis using Apache Spark
+         Utility functions.
+Author : Yohannis K Telila
+Date : 04 July 2022
+
+'''
+
 import requests
 import json
+
 
 sentiments = ["Neutral", "Positive", "Negative"]
 sentiment_counts = {'Neutral':0, 'Positive':0, 'Negative':0}
 # url for updating result.
-url = 'http://localhost:5000/updatedata'
+url = 'http://131.114.50.200:5000/updatedata'
 
 def prepare_request_data(data_dict):
         global sentiment_counts, sentiments
@@ -41,10 +50,13 @@ def foreach_batch_neg_function(df, epoch_id):
                  DataFrame is expected to be small, as all the data is loaded 
                  into the driver’s memory.
         '''
-        panda_df = df.select("created_at","text","profile_image_url","username").limit(2).toPandas()
+        # If the batches are not small the commented code below should be used. because we are bringing the whole
+        # df to the driver.
+        # panda_df = df.select("created_at","text","profile_image_url","username").limit(2).toPandas()
+        panda_df = df.select("created_at","text","profile_image_url","username").toPandas()
         if len(panda_df) > 0:
                 tweetsList = panda_df.values.tolist()
-                url_neg = 'http://localhost:5000/add_negative_tweet'
+                url_neg = 'http://131.114.50.200:5000/add_negative_tweet'
                 for tweet in tweetsList:
                         created_at = tweet[0]
                         text = tweet[1]
@@ -52,5 +64,8 @@ def foreach_batch_neg_function(df, epoch_id):
                         user_name = tweet[3]
                         request_data = {'created_at': str(created_at), 'username': str(user_name), 'text': str(text), 'profile_image_url': str(profile_image_url)}
                         headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
-                        response = requests.post(url_neg, data=json.dumps(request_data), headers=headers)
-                        print(response.text) 
+                        try:
+                                response = requests.post(url_neg, data=json.dumps(request_data), headers=headers)
+                                print(response.text) 
+                        except Exception as e:
+                                print(e)
